@@ -1,4 +1,4 @@
-# Resolución de Ejercicios: Código de Tres Direcciones (TAC)
+# Resolución de ejercicios: Código de Tres Direcciones (TAC)
 
 ## Ejercicio 1
 **Código Original:**
