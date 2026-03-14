@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejercicios TAC - Visualizador interactivo</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Prism.js for Syntax Highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bg-color: #1a0b2e;
+            --surface: #2d1b4e;
+            --surface-hover: #432a74;
+            --text-primary: #f8fafc;
+            --text-secondary: #d8b4fe;
+            --accent: #a855f7;
+            --accent-glow: rgba(168, 85, 247, 0.5);
+            --gradient-start: #c084fc;
+            --gradient-end: #7e22ce;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            flex-direction: row;
+        }
+
+        /* Nav Sidebar */
+        aside {
+            width: 280px;
+            background-color: rgba(45, 27, 78, 0.8);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1rem;
+            overflow-y: auto;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--surface-hover);
+            color: var(--text-primary);
+            transform: translateX(4px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(126,34,206,0.2));
+            color: var(--accent);
+            border-left: 3px solid var(--accent);
+        }
+
+        /* Scrollbar styles para el nav */
+        aside::-webkit-scrollbar { width: 6px; }
+        aside::-webkit-scrollbar-track { background: transparent; }
+        aside::-webkit-scrollbar-thumb { background: var(--surface-hover); border-radius: 10px; }
+
+        /* Contenido Principal */
+        main {
+            flex: 1;
+            padding: 2rem 4rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .exercise-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .exercise-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .exercise-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .code-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .code-panel {
+            background-color: var(--surface);
+            border-radius: 1rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            background-color: rgba(255,255,255,0.02);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+        }
+
+        .panel-header h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .panel-body {
+            padding: 1.5rem;
+            flex: 1;
+            overflow-x: auto;
+        }
+
+        pre {
+            font-family: 'Fira Code', monospace !important;
+            font-size: 0.95rem;
+            margin: 0 !important;
+            background: transparent !important;
+            padding: 0 !important;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace !important;
+            text-shadow: none !important;
+        }
+
+        /* Reglas Personalizadas de Colores Prism.js para TAC */
+        .language-tac .token.keyword { color: #c678dd; }      /* Ej: IfZ, Goto, LCall */
+        .language-tac .token.function { color: #e5c07b; }     /* Ej: Etiquetas/Labels L1: */
+        .language-tac .token.number { color: #d19a66; }       /* Ej: 4, 10, 500 */
+        .language-tac .token.operator { color: #56b6c2; }     /* Ej: = + - < > */
+        .language-tac .token.variable { color: #e06c75; }     /* Ej: t1, t2, x, charge */
+        .language-tac .token.string { color: #98c379; }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+            max-width: 400px;
+        }
+
+        /* Responsive Layout */
+        @media (max-width: 1000px) {
+            .code-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                overflow-y: auto;
+                height: 100%;
+            }
+
+            aside {
+                width: 100%;
+                max-height: 250px;
+                border-right: none;
+                border-bottom: 2px solid rgba(255,255,255,0.1);
+                order: -1; 
+            }
+            
+            #nav-container {
+                display: flex;
+                overflow-x: auto;
+                gap: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+            
+            .nav-btn {
+                white-space: nowrap;
+                margin-bottom: 0;
+            }
+
+            main {
+                padding: 1rem;
+                overflow-y: visible;
+            }
+
+            .exercise-header h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <aside>
+        <header>
+            <h1>TAC Visualizer</h1>
+        </header>
+        <div id="nav-container">
+            <!-- Navigation buttons populated via JS -->
+        </div>
+    </aside>
+
+    <main id="main-content">
+        <div class="empty-state">
+            <h2>Bienvenido</h2>
+            <p>Selecciona un ejercicio del menú lateral para visualizar la conversión y comparar el código original contra el Modelo de Tres Direcciones.</p>
+        </div>
+    </main>
+
+    <!-- Prism.js Plugins para renderizado de sintaxis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
+    
+    <script>
+        // Registrando lógica especial para interpretar el texto plano de "Stanford/Decaf TAC" como un lenguaje y darle colores.
+        Prism.languages.tac = {
+            'keyword': /\b(IfZ|Goto|PushParam|PopParams|LCall|BeginFunc|EndFunc|Return|End)\b/i,
+            'operator': /[=+\-*/%<>&|]/,
+            'number': /\b\d+(?:\.\d+)?\b/,
+            'function': /[a-zA-Z_]\w*(?=:)/, // Funciones o Etiquetas que terminan en :
+            'string': /(["']).*?\1/,
+            'variable': /\b([A-Za-z_][a-zA-Z0-9_$]*)\b(?!\s*\()/ // Variables y temporales
+        };
+
+        const data = [
+            {
+                id: 1,
+                title: "Ejercicio 1",
+                lang: "javascript",
+                original: "resultado = (a + b) * c - (d / e)",
+                tac: "t1 = a + b\nt2 = d / e\nt3 = t1 * c\nt4 = t3 - t2\nresultado = t4"
+            },
+            {
+                id: 2,
+                title: "Ejercicio 2",
+                lang: "javascript",
+                original: "x = ((a * b) + (c - d)) / (e + f)",
+                tac: "t1 = a * b\nt2 = c - d\nt3 = t1 + t2\nt4 = e + f\nt5 = t3 / t4\nx = t5"
+            },
+            {
+                id: 3,
+                title: "Ejercicio 3",
+                lang: "javascript",
+                original: "condicion = (a >= b) && (c < d) || (e == f)",
+                tac: "t1 = a > b\nt2 = a == b\nt3 = t1 || t2\nt4 = c < d\nt5 = e == f\nt6 = t3 && t4\nt7 = t6 || t5\ncondicion = t7"
+            },
+            {
+                id: 4,
+                title: "Ejercicio 4",
+                lang: "javascript",
+                original: "total = (a % b) % (c + d) - (e / f) * g",
+                tac: "t1 = a % b\nt2 = c + d\nt3 = e / f\nt4 = t1 % t2\nt5 = t3 * g\nt6 = t4 - t5\ntotal = t6"
+            },
+            {
+                id: 5,
+                title: "Ejercicio 5",
+                lang: "javascript",
+                original: "valor = (a + b * c - d + e * f) / g",
+                tac: "t1 = b * c\nt2 = e * f\nt3 = a + t1\nt4 = t3 - d\nt5 = t4 + t2\nt6 = t5 / g\nvalor = t6"
+            },
+            {
+                id: 6,
+                title: "Ejercicio 6",
+                lang: "javascript",
+                original: "x = 9 + 4 * 5 - 3 + 2 + 1 - 5 - 1 * 3",
+                tac: "t1 = 4 * 5\nt2 = 1 * 3\nt3 = 9 + t1\nt4 = t3 - 3\nt5 = t4 + 2\nt6 = t5 + 1\nt7 = t6 - 5\nt8 = t7 - t2\nx = t8"
+            },
+            {
+                id: 7,
+                title: "Ejercicio 7",
+                lang: "python",
+                original: "x = 3\ny = 5\nz = 7\nresultado = 2 * x ** 3 + 3 * y ** 2- z + 4 * x * y",
+                tac: "x = 3\ny = 5\nz = 7\nt1 = x ** 3\nt2 = 2 * t1\nt3 = y ** 2\nt4 = 3 * t3\nt5 = t2 + t4\nt6 = t5 - z\nt7 = 4 * x\nt8 = t7 * y\nt9 = t6 + t8\nresultado = t9"
+            },
+            {
+                id: 8,
+                title: "Ejercicio 8",
+                lang: "javascript",
+                original: "if (x > 0) {\n  y = x;\n} else {\n  y = -x;\n}",
+                tac: "t1 = x > 0\nIfZ t1 Goto L1\ny = x\nGoto L2\nL1:\ny = - x\nL2:\nEnd"
+            },
+            {
+                id: 9,
+                title: "Ejercicio 9",
+                lang: "python",
+                original: "i = 0\nwhile i < 10:\n  print(i)\n  i = i + 1",
+                tac: "i = 0\nL1:\nt1 = i < 10\nIfZ t1 Goto L2\nPushParam i\nLCall _PrintInt\nPopParams 4\nt2 = i + 1\ni = t2\nGoto L1\nL2:\nEnd"
+            },
+            {
+                id: 10,
+                title: "Ejercicio 10",
+                lang: "php",
+                original: "function suma($a, $b) {\n  return $a + $b;\n}\n$r = suma(5, 3);",
+                tac: "suma:\nBeginFunc\nt1 = a + b\nReturn t1\nEndFunc\nmain:\nBeginFunc\nPushParam 3\nPushParam 5\nt2 = LCall suma\nPopParams 8\nr = t2\nEndFunc"
+            },
+            {
+                id: 11,
+                title: "Ejercicio 11",
+                lang: "java",
+                original: "int a = 5, b = 10;\nif (a * 2 > b) {\n  b = b - a;\n} else {\n  b = b + a;\n}",
+                tac: "a = 5\nb = 10\nt1 = a * 2\nt2 = t1 > b\nIfZ t2 Goto L1\nt3 = b - a\nb = t3\nGoto L2\nL1:\nt4 = b + a\nb = t4\nL2:\nEnd"
+            },
+            {
+                id: 12,
+                title: "Ejercicio 12",
+                lang: "python",
+                original: "name = \"Dracula\"\nage = 500\nis_vampire = False\nif name == \"dracula\" or age > 100:\n  is_vampire = True\nif is_vampire:\n  print(\"Warning! Vampire detected!\")\nelse:\n  print(\"Phew! No vampires here\")",
+                tac: "name = \"Dracula\"\nage = 500\nis_vampire = 0\nt1 = name == \"dracula\"\nt2 = age > 100\nt3 = t1 || t2\nIfZ t3 Goto L1\nis_vampire = 1\nL1:\nIfZ is_vampire Goto L2\nPushParam \"Warning! Vampire detected!\"\nLCall _PrintString\nPopParams 4\nGoto L3\nL2:\nPushParam \"Phew! No vampires here\"\nLCall _PrintString\nPopParams 4\nL3:\nEnd"
+            },
+            {
+                id: 13,
+                title: "Ejercicio 13",
+                lang: "python",
+                original: "aliens = 5\npotencia_laser = 10\nif aliens < 10:\n  print(\"¡Aparece una nave nodriza!\")\nif aliens < 5:\n  print(\"¡Aparece una horda de aliens pequeños!\")\nif potencia_laser >= aliens * 2:\n  print(\"¡Has ganado el juego!\")\nelse:\n  print(\"Quedan \" + str(aliens) + \" aliens enemigos.\")",
+                tac: "aliens = 5\npotencia_laser = 10\nt1 = aliens < 10\nIfZ t1 Goto L1\nPushParam \"¡Aparece una nave nodriza!\"\nLCall _PrintString\nPopParams 4\nL1:\nt2 = aliens < 5\nIfZ t2 Goto L2\nPushParam \"¡Aparece una horda de aliens pequeños!\"\nLCall _PrintString\nPopParams 4\nL2:\nt3 = aliens * 2\nt4 = potencia_laser > t3\nt5 = potencia_laser == t3\nt6 = t4 || t5\nIfZ t6 Goto L3\nPushParam \"¡Has ganado el juego!\"\nLCall _PrintString\nPopParams 4\nGoto L4\nL3:\nt7 = \"Quedan \" + aliens\nt8 = t7 + \" aliens enemigos.\"\nPushParam t8\nLCall _PrintString\nPopParams 4\nL4:\nEnd"
+            },
+            {
+                id: 14,
+                title: "Ejercicio 14",
+                lang: "java",
+                original: "int shield = 100;\nint hits = 0;\nwhile (shield > 0) {\n  hits++;\n  if (hits == 3) {\n    shield = 50;\n  }\n  shield -= 20;\n}\nSystem.out.println(\"Escudo destruido!\");",
+                tac: "shield = 100\nhits = 0\nL1:\nt1 = shield > 0\nIfZ t1 Goto L2\nt2 = hits + 1\nhits = t2\nt3 = hits == 3\nIfZ t3 Goto L3\nshield = 50\nL3:\nt4 = shield - 20\nshield = t4\nGoto L1\nL2:\nPushParam \"Escudo destruido!\"\nLCall _PrintString\nPopParams 4\nEnd"
+            },
+            {
+                id: 16,
+                title: "Ejercicio 16",
+                lang: "c",
+                original: "int suma(int a, int b) {\n  return a + b;\n}\nvoid main() {\n  int c;\n  int d;\n  suma(c, d);\n}",
+                tac: "suma:\nBeginFunc\nt1 = a + b\nReturn t1\nEndFunc\nmain:\nBeginFunc\nPushParam d\nPushParam c\nLCall suma\nPopParams 8\nEndFunc"
+            },
+            {
+                id: 17,
+                title: "Ejercicio 17",
+                lang: "python",
+                original: "def usd_a_mxn(usd):\n  return usd * 18.50\n\ndef mxn_a_usd(mxn):\n  return mxn / 18.50\n\nusd = 100\nprint(usd_a_mxn(usd))\n\nmxn = 10000\nprint(mxn_a_usd(mxn))",
+                tac: "usd_a_mxn:\nBeginFunc\nt1 = usd * 18.50\nReturn t1\nEndFunc\nmxn_a_usd:\nBeginFunc\nt1 = mxn / 18.50\nReturn t1\nEndFunc\nmain:\nBeginFunc\nusd = 100\nPushParam usd\nt2 = LCall usd_a_mxn\nPopParams 4\nPushParam t2\nLCall _PrintInt\nPopParams 4\nmxn = 10000\nPushParam mxn\nt3 = LCall mxn_a_usd\nPopParams 4\nPushParam t3\nLCall _PrintInt\nPopParams 4\nEndFunc"
+            },
+            {
+                id: 18,
+                title: "Ejercicio 18",
+                lang: "c",
+                original: "int es_par(int numero) {\n  return numero % 2 == 0;\n}\nint main() {\n  int num = 7;\n  if (es_par(num)) {\n    printf(\"%d es par\\n\", num);\n  } else {\n    printf(\"%d es impar\\n\", num);\n  }\n  return 0;\n}",
+                tac: "es_par:\nBeginFunc\nt1 = numero % 2\nt2 = t1 == 0\nReturn t2\nEndFunc\nmain:\nBeginFunc\nnum = 7\nPushParam num\nt3 = LCall es_par\nPopParams 4\nIfZ t3 Goto L1\nt4 = num + \" es par\\n\"\nPushParam t4\nLCall _PrintString\nPopParams 4\nGoto L2\nL1:\nt5 = num + \" es impar\\n\"\nPushParam t5\nLCall _PrintString\nPopParams 4\nL2:\nReturn 0\nEndFunc"
+            },
+            {
+                id: 19,
+                title: "Ejercicio 19",
+                lang: "php",
+                original: "$energy = 80;\n$attacks = 0;\nwhile ($energy > 0) {\n  if ($attacks >= 2) {\n    $energy += 10;\n  }\n  $energy -= 15;\n  $attacks++;\n}\necho \"Energía agotada!\";",
+                tac: "energy = 80\nattacks = 0\nL1:\nt1 = energy > 0\nIfZ t1 Goto L2\nt2 = attacks > 2\nt3 = attacks == 2\nt4 = t2 || t3\nIfZ t4 Goto L3\nt5 = energy + 10\nenergy = t5\nL3:\nt6 = energy - 15\nenergy = t6\nt7 = attacks + 1\nattacks = t7\nGoto L1\nL2:\nPushParam \"Energía agotada!\"\nLCall _PrintString\nPopParams 4\nEnd"
+            },
+            {
+                id: 20,
+                title: "Ejercicio 20",
+                lang: "python",
+                original: "charge = 0\nspecial_ready = False\nwhile not special_ready:\n  charge += 15\n  if charge >= 100:\n    special_ready = True\n  else:\n    charge += 5\nprint(\"¡Habilidad especial lista!\")",
+                tac: "charge = 0\nspecial_ready = 0\nL1:\nt1 = special_ready == 0\nIfZ t1 Goto L2\nt2 = charge + 15\ncharge = t2\nt3 = charge > 100\nt4 = charge == 100\nt5 = t3 || t4\nIfZ t5 Goto L3\nspecial_ready = 1\nGoto L1\nL3:\nt6 = charge + 5\ncharge = t6\nGoto L1\nL2:\nPushParam \"¡Habilidad especial lista!\"\nLCall _PrintString\nPopParams 4\nEnd"
+            }
+        ];
+
+        const navContainer = document.getElementById('nav-container');
+        const mainContent = document.getElementById('main-content');
+
+        // Función para renderizar el panel de contenido
+        function renderExercise(id) {
+            const exercise = data.find(e => e.id === id);
+            
+            // Actualiza estilos de selección
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.id == id);
+            });
+
+            // Genera la cuadrícula con el código original y TAC
+            const html = `
+                <div class="exercise-container">
+                    <div class="exercise-header">
+                        <h2>${exercise.title}</h2>
+                    </div>
+                    
+                    <div class="code-grid">
+                        <div class="code-panel">
+                            <div class="panel-header">
+                                <h3>Código Original (${exercise.lang.toUpperCase()})</h3>
+                            </div>
+                            <div class="panel-body">
+                                <pre><code class="language-${exercise.lang}">${exercise.original}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="code-panel">
+                            <div class="panel-header">
+                                <h3>Stanford TAC Decaf</h3>
+                            </div>
+                            <div class="panel-body">
+                                <pre><code class="language-tac">${exercise.tac}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            mainContent.innerHTML = html;
+            // Refrescar el motor de resaltado de código Prism.js
+            Prism.highlightAllUnder(mainContent);
+        }
+
+        // Crear dinámicamente el listado de navegación izquierdo
+        data.forEach(ex => {
+            const btn = document.createElement('button');
+            btn.className = 'nav-btn';
+            btn.dataset.id = ex.id;
+            btn.textContent = ex.title;
+            btn.onclick = () => renderExercise(ex.id);
+            navContainer.appendChild(btn);
+        });
+    </script>
+</body>
+</html>
